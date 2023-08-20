@@ -1,0 +1,2 @@
+# refresh_tabular
+Aplikacja umożliwiająca automatyzację odświeżania modeli tabelarycznych
