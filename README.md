@@ -56,5 +56,5 @@ YML_CONTAINER:metadata
 ```
 
 # Uruchamianie
-Z uwagi na fakt, ze aplikacja zostala napisana dla wersji jezyka Powershell 7 (Core), moze zostac uruchomiona na dowolnym systemie operacyjnym. Obecna struktura skryptu przewiduje codzienne odswiezanie wybranych tabel na modelu dwa razy dziennie. Zalecane jest stworzenie zadania cyklicznego w Task Schedulerze lub cronjoba o wysokiej czestotliwosci, tak, aby latwo dostosowac sie do ewentualnych zmian godzinowych w pliku .yml.
+Z uwagi na fakt, ze aplikacja zostala napisana dla wersji jezyka Powershell 7 (Core), moze zostac uruchomiona na windowsie/linuksie/macOs. Obecna struktura skryptu przewiduje codzienne odswiezanie wybranych tabel na modelu dwa razy dziennie. Zalecane jest stworzenie zadania cyklicznego w Task Schedulerze lub cronjoba o wysokiej czestotliwosci, tak, aby latwo dostosowac sie do ewentualnych zmian godzinowych w pliku .yml.
 Skrypt przy kazdym uruchomieniu porownuje biezaca godzine ze wskazana godzina w pliku konfiguracyjnym i zaleznie od wyniku, rozpoczyna odswiezanie tabel badz konczy dzialanie.
