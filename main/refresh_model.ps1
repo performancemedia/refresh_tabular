@@ -71,21 +71,23 @@ function Start-TableProcessing {
     foreach ($table in $Tables) {
         Write-Host "Processing table $table"
 
-        $index = 0
+        $id = 0
 
         try {
             Invoke-ProcessTable -TableName $table -DatabaseName $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential
 
-            $refresh_stats | Add-Member -MemberType NoteProperty -Name ($index += 1) -Value $table | Add-Member -MemberType NoteProperty -Name "Status" -Value "Success"
+            $refresh_stats | Add-Member -MemberType NoteProperty -Name $id -Value $table | Add-Member -MemberType NoteProperty -Name "Status" -Value "Success"
 
             Write-Host "Table $table was refreshed successfully"
         }
 
         catch {
-            $refresh_stats | Add-Member -MemberType NoteProperty -Name ($index += 1) -Value $table | Add-Member -MemberType NoteProperty -Name "Status" -Value $Error[0].Exception.Message
+            $refresh_stats | Add-Member -MemberType NoteProperty -Name $id -Value $table | Add-Member -MemberType NoteProperty -Name "Status" -Value $Error[0].Exception.Message
 
             Write-Host "Processing table $table ended with failure"
         }
+
+        $id += 1
     }
 
 }
