@@ -106,12 +106,12 @@ else {
 
 # zapisz wyniki odswiezania jako json
 $current_datetime = Get-Date -Format "yyyyMMddHHmm"
-$filename = ".\logs\refresh_logs_$current_datetime.txt"
+$filename = ".\refresh_logs_$current_datetime.txt"
 $refresh_stats | Add-Member -MemberType NoteProperty -Name "Datetime" -Value (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
 $refresh_stats | ConvertTo-Json -Depth 1 | Out-File ".\logs\$filename"
 
 # umiesc wyniki na bobie
-Start-BlobUploadOrDownload -StorageAccount $ENV:STORAGE_ACCOUNT -Container $ENV:LOG_CONTAINER -StorageAccountAccessKey $ENV:ACCESS_KEY -FileNameOrFilePath $filename -Upload -Verbose
+Start-BlobUploadOrDownload -StorageAccount $ENV:STORAGE_ACCOUNT -Container $ENV:LOG_CONTAINER -StorageAccountAccessKey $ENV:ACCESS_KEY -FileNameOrFilePath ".\logs\$filename" -Upload -Verbose
 
 # dodac obsluge bledow []
 # dodac odswiezanie na konkretny event []
