@@ -76,15 +76,15 @@ function Start-TableProcessing {
         try {
             Invoke-ProcessTable -TableName $table -DatabaseName $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential
 
-            $refresh_stats | Add-Member -MemberType NoteProperty -Name $id -Value $table
-            $refresh_stats | Add-Member -MemberType NoteProperty -Name "Status $id" -Value "Success"
+            $refresh_stats | Add-Member -MemberType NoteProperty -Name $id -Value @($table, "|", "Success")
+            # $refresh_stats | Add-Member -MemberType NoteProperty -Name "Status $id" -Value "Success"
 
             Write-Host "Table $table was refreshed successfully"
         }
 
         catch {
-            $refresh_stats | Add-Member -MemberType NoteProperty -Name $id -Value $table 
-            $refresh_stats | Add-Member -MemberType NoteProperty -Name "Status $id" -Value $Error[0].Exception.Message
+            $refresh_stats | Add-Member -MemberType NoteProperty -Name $id -Value @($table,"|", $Error[0].Exception.Message)
+            # $refresh_stats | Add-Member -MemberType NoteProperty -Name "Status $id" -Value $Error[0].Exception.Message
 
             Write-Host "Processing table $table ended with failure"
         }
