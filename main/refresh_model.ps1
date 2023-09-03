@@ -32,7 +32,7 @@ if (($is_active -eq "TAK") -and ($current_hour -in $scheduled_hour))
 }
 else {
     Write-Host "Refresh didn't start.
-    Reason: Current time is not maching with scheduled time"
+    Reason: Current time is not maching with scheduled one or the flow is not active"
     break
 }
 
@@ -51,7 +51,12 @@ $Credential = New-Object -TypeName System.Management.Automation.PSCredential -Ar
 
 Connect-AzAccount -Credential $Credential -Subscription $ENV:SUBSCRIPTION_ID -Tenant $ENV:TENANT_ID -AuthScope AnalysisServices
 
-$refresh_stats = [PSCustomObject]@{}
+# stworz folder z logami, jezeli nie istnial do tej pory
+if ((Get-ChildItem .\).Name -contains "logs") {$null}
+else {
+    Write-Host "Created new directory - 'logs'"
+    New-Item -Path (Get-Location) -Name "logs" -ItemType "directory"
+}
 
 function Start-TableProcessing {
     [CmdletBinding(
@@ -68,50 +73,55 @@ function Start-TableProcessing {
         [string[]] $Tables
     )
 
-    $id = 0
+    $processing_results = @()
+    $start_times = @()
+    $end_times = @()
+    $table_names = @()
     
     foreach ($table in $Tables) {
         Write-Host "Processing table $table"
 
+        $start_times += (Get-Date -Format "HH:mm:ss")
+        $table_names += $table
+
         try {
             Invoke-ProcessTable -TableName $table -DatabaseName $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential
 
-            $refresh_stats | Add-Member -MemberType NoteProperty -Name $id -Value @($table, "|", "Success")
-            # $refresh_stats | Add-Member -MemberType NoteProperty -Name "Status $id" -Value "Success"
+            $end_times += (Get-Date -Format "HH:mm:ss")
+            $processing_results += "Success"
 
             Write-Host "Table $table was refreshed successfully"
         }
 
         catch {
-            $refresh_stats | Add-Member -MemberType NoteProperty -Name $id -Value @($table,"|", $Error[0].Exception.Message)
-            # $refresh_stats | Add-Member -MemberType NoteProperty -Name "Status $id" -Value $Error[0].Exception.Message
+            $end_times += (Get-Date -Format "HH:mm:ss")
+            $processing_results += $Error[0].Exception.Message
 
             Write-Host "Processing table $table ended with failure"
         }
 
-        $id += 1
     }
+
+    $refresh_stats = [PSCustomObject]@{
+        Tabela = $table_names
+        Start = $start_times
+        Koniec = $end_times
+        Wynik = $processing_results
+    }
+
+    # zapisz wyniki odswiezania jako json
+    $refresh_stats | ConvertTo-Json -Depth 100 | Out-File ".\logs\$filename"
 
 }
 
 # rozpocznij odswiezanie tabel na modelu
-Start-TableProcessing @refresh_params
-
-# stworz folder z logami, jezeli nie istnial do tej pory
-if ((Get-ChildItem .\).Name -contains "logs") {$null}
-else {
-    Write-Host "Created new directory - 'logs'"
-    New-Item -Path (Get-Location) -Name "logs" -ItemType "directory"
-}
-
-# zapisz wyniki odswiezania jako json
-$current_datetime = Get-Date -Format "yyyyMMddHHmm"
+$current_datetime = Get-Date -Format "yyyyMMddHHmmss"
 $filename = ".\refresh_logs_$current_datetime.txt"
-$refresh_stats | Add-Member -MemberType NoteProperty -Name "Datetime" -Value (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
-$refresh_stats | ConvertTo-Json -Depth 1 | Out-File ".\logs\$filename"
+Start-TableProcessing @refresh_params
 
 # umiesc wyniki na bobie
 Start-BlobUploadOrDownload -StorageAccount $ENV:STORAGE_ACCOUNT -Container $ENV:LOG_CONTAINER -StorageAccountAccessKey $ENV:ACCESS_KEY -FileNameOrFilePath ".\logs\$filename" -Upload -Verbose
 
+### TODO 
 # dodac obsluge bledow []
 # dodac odswiezanie na konkretny event []
