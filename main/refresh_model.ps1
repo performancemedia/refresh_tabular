@@ -81,20 +81,20 @@ function Start-TableProcessing {
     foreach ($table in $Tables) {
         Write-Host "Processing table $table"
 
-        $start_times += (Get-Date -Format "HH:mm:ss")
+        $start_times += (Get-Date -Format "yyyy/MM/dd HH:mm:ss")
         $table_names += $table
 
         try {
             Invoke-ProcessTable -TableName $table -DatabaseName $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential
 
-            $end_times += (Get-Date -Format "HH:mm:ss")
+            $end_times += (Get-Date -Format "yyyy/MM/dd HH:mm:ss")
             $processing_results += "Success"
 
             Write-Host "Table $table was refreshed successfully"
         }
 
         catch {
-            $end_times += (Get-Date -Format "HH:mm:ss")
+            $end_times += (Get-Date -Format "yyyy/MM/dd HH:mm:ss")
             $processing_results += $Error[0].Exception.Message
 
             Write-Host "Processing table $table ended with failure"
