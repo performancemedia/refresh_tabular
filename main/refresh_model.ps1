@@ -80,9 +80,9 @@ function Start-TableProcessing {
     
     #wyciagnij wejsciowe ilosci wierszy dla kazdej z tabel, przed rozpoczeciem odswiezania
     $Tables_tmp = $Tables
-    $dax_query = ($Tables_tmp += "BLANK()") | Foreach-object {"(COUNTROWS('{0}'),`"{0}`")," -f $_}
+    $dax_query = ($Tables_tmp | Foreach-object {"(COUNTROWS('{0}'),`"{0}`")" -f $_}) -join ","
     [xml]$response = Invoke-AsCmd -Server $AnalysisServicesInstance -Database $AnalysisServicesDatabaseName -Credential $Credential -Query $dax_query
-    $initial_rows = response.return.root.row | Format-Table
+    $initial_rows = $response.return.root.row | Format-Table
 
     foreach ($table in $Tables) {
         Write-Host "Processing table $table"
