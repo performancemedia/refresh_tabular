@@ -78,12 +78,17 @@ function Start-TableProcessing {
     $end_times = @()
     $table_names = @()
     
+    #wyciagnij wejsciowe ilosci wierszy dla kazdej z tabel, przed rozpoczeciem odswiezania
+    $dax_query = ($Tables += "BLANK()") | Foreach-object {"(COUNTROWS('{0}'),`"{0}`")," -f $_}
+    [xml]$response = Invoke-AsCmd -Server $AnalysisServicesInstance -Database $AnalysisServicesDatabaseName -Credential $Credential -Query $dax_query
+    $initial_rows = response.return.root.row | Format-Table
+
     foreach ($table in $Tables) {
         Write-Host "Processing table $table"
 
         $start_times += (Get-Date -Format "yyyy/MM/dd HH:mm:ss")
         $table_names += $table
-
+        
         try {
             Invoke-ProcessTable -TableName $table -DatabaseName $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential
 
@@ -102,11 +107,17 @@ function Start-TableProcessing {
 
     }
 
+    # wyciagnij wyjsciowe ilosci wierszy dla kazdej z tabel. Posluzy to do porownania, ile wierszy zostalo zaladowanych dla kazdej z tabel
+    [xml]$response = Invoke-AsCmd -Server $AnalysisServicesInstance -Database $AnalysisServicesDatabaseName -Credential $Credential -Query $dax_query
+    $final_rows = response.return.root.row | Format-Table
+
     $refresh_stats = [PSCustomObject]@{
         Tabela = $table_names
         Start = $start_times
         Koniec = $end_times
         Wynik = $processing_results
+        Wiersze_wejsciowe = $initial_rows._x005B_Value1_x005D_
+        Wiersze_wyjsciowe = $final_rows._x005B_Value1_x005D_
     }
 
     # zapisz wyniki odswiezania jako json
