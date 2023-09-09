@@ -79,7 +79,8 @@ function Start-TableProcessing {
     $table_names = @()
     
     #wyciagnij wejsciowe ilosci wierszy dla kazdej z tabel, przed rozpoczeciem odswiezania
-    $dax_query = ($Tables += "BLANK()") | Foreach-object {"(COUNTROWS('{0}'),`"{0}`")," -f $_}
+    $Tables_tmp = $Tables
+    $dax_query = ($Tables_tmp += "BLANK()") | Foreach-object {"(COUNTROWS('{0}'),`"{0}`")," -f $_}
     [xml]$response = Invoke-AsCmd -Server $AnalysisServicesInstance -Database $AnalysisServicesDatabaseName -Credential $Credential -Query $dax_query
     $initial_rows = response.return.root.row | Format-Table
 
@@ -109,7 +110,7 @@ function Start-TableProcessing {
 
     # wyciagnij wyjsciowe ilosci wierszy dla kazdej z tabel. Posluzy to do porownania, ile wierszy zostalo zaladowanych dla kazdej z tabel
     [xml]$response = Invoke-AsCmd -Server $AnalysisServicesInstance -Database $AnalysisServicesDatabaseName -Credential $Credential -Query $dax_query
-    $final_rows = response.return.root.row | Format-Table
+    $final_rows = $response.return.root.row | Format-Table
 
     $refresh_stats = [PSCustomObject]@{
         Tabela = $table_names
