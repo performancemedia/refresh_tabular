@@ -23,7 +23,7 @@ $params_file = (Get-Content .\data\metadane.yml) | ConvertFrom-Yaml
 Import-Module .\modules\read_params.psm1
 
 # sprawdz, czy odswiezanie powinno zostac wykonane
-$is_active = (Read-Params -ParamsFile $params_file -ReturnedValue "Aktywny").ToUpper()
+$is_active = (Read-Params -ParamsFile $params_file -ReturnedValue "Odswiezanie_aktywne").ToUpper()
 $scheduled_hour = Read-Params -ParamsFile $params_file -ReturnedValue "Godziny"
 
 if (($is_active -eq "TAK") -and ($current_hour -in $scheduled_hour)) 
@@ -88,7 +88,7 @@ function Start-TableProcessing {
             Invoke-ProcessTable -TableName $table -DatabaseName $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential
 
             $end_times += (Get-Date -Format "yyyy/MM/dd HH:mm:ss")
-            $processing_results += "Success"
+            $processing_results += "Sukces"
 
             Write-Host "Table $table was refreshed successfully"
         }
@@ -122,6 +122,9 @@ Start-TableProcessing @refresh_params
 # umiesc wyniki na bobie
 Start-BlobUploadOrDownload -StorageAccount $ENV:STORAGE_ACCOUNT -Container $ENV:LOG_CONTAINER -StorageAccountAccessKey $ENV:ACCESS_KEY -FileNameOrFilePath ".\logs\$filename" -Upload -Verbose
 
-### TODO 
-# dodac obsluge bledow []
-# dodac odswiezanie na konkretny event []
+# odswiez raport z wynikami procesowania modelu (chyba, ze wskazano inaczej w pliku .yml)
+if ( (Read-Params -ParamsFile $params_file -ReturnedValue "Raport_odswiezania").ToUpper() -eq "TAK") {
+    Import-Module .\modules\refresh_pbi_dataset.psm1
+
+    Start-DatasetRefresh -UserEmail $ENV:PBI_UID -UserPwd $ENV:PBI_PWD -DatasetId $ENV:PBI_DATASETID
+}
