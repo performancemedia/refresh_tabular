@@ -15,7 +15,7 @@ Import-Module .\modules\upload_download_files.psm1
 Start-BlobUploadOrDownload -StorageAccount $ENV:STORAGE_ACCOUNT -Container $ENV:YML_CONTAINER -StorageAccountAccessKey $ENV:ACCESS_KEY -FileNameOrFilePath "metadane.yml" -FileDestination .\data\metadane.yml -Download
 
 Import-Module .\modules\check_modules.psm1
-Start-ModuleVerification -Modules @("SqlServer","Az.Accounts","MariaDBCmdlets","Az.Storage","powershell-yaml")
+Start-ModuleVerification -Modules @("SqlServer","Az.Accounts","MariaDBCmdlets","Az.Storage","powershell-yaml", "MicrosoftPowerBIMgmt")
 
 # zaimportuj parametry
 $params_file = (Get-Content .\data\metadane.yml) | ConvertFrom-Yaml
