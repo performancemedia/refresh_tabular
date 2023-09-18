@@ -1,23 +1,22 @@
+Odswiezanie_aktywne: TAK
 Serwer: asazure://westeurope.asazure.windows.net/aaslorealprod
 Model: Loreal - PROD
 Tabele:
 - _master_content
 - _master_coverages
 - _master_domains_monthly
-- _master_keywords
 - _master_keywords_pages
 - _master_pages
 - advices
-- ahrefs_competitors_stats
 - ahrefs_domains_competitors_stats
 - all_keywords
 - all_pages
 - brands
+- brands_domains
 - brands_generic
 - calendar
 - categories
 - channels
-- competitors
 - concerns
 - content_score
 - domains_competitors
@@ -30,9 +29,7 @@ Tabele:
 - paid_market_share
 - products
 - seo_market_share
-- seo_pages
 Godziny:
-- 8
-- 15
-- 20
-Aktywny: TAK
+- 11
+- 18
+Raport_odswiezania: TAK
