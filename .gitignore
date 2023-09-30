@@ -1,4 +1,4 @@
 logs/
 .config
-./tests
-./data
+tests/
+data/

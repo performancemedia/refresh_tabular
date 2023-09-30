@@ -12,10 +12,10 @@ $current_hour = Get-Date -Format "HH"
 
 # zaktualizuj plik z metadanymi
 Import-Module .\modules\upload_download_files.psm1
-Start-BlobUploadOrDownload -StorageAccount $ENV:STORAGE_ACCOUNT -Container $ENV:YML_CONTAINER -StorageAccountAccessKey $ENV:ACCESS_KEY -FileNameOrFilePath "metadane.yml" -FileDestination .\data\metadane.yml -Download
+# Start-BlobUploadOrDownload -StorageAccount $ENV:STORAGE_ACCOUNT -Container $ENV:YML_CONTAINER -StorageAccountAccessKey $ENV:ACCESS_KEY -FileNameOrFilePath "metadane.yml" -FileDestination .\data\metadane.yml -Download
 
 Import-Module .\modules\check_modules.psm1
-Start-ModuleVerification -Modules @("SqlServer","Az.Accounts","MariaDBCmdlets","Az.Storage","powershell-yaml", "MicrosoftPowerBIMgmt")
+# Start-ModuleVerification -Modules @("SqlServer","Az.Accounts","Az.Storage","powershell-yaml", "MicrosoftPowerBIMgmt")
 
 # zaimportuj parametry
 $params_file = (Get-Content .\data\metadane.yml) | ConvertFrom-Yaml
@@ -41,7 +41,6 @@ $refresh_params =
 @{
     AnalysisServicesInstance = Read-Params -ParamsFile $params_file -ReturnedValue "Serwer"
     AnalysisServicesDatabaseName = Read-Params -ParamsFile $params_file -ReturnedValue "Model"
-    Tables = Read-Params -ParamsFile $params_file -ReturnedValue "Tabele"
 }
 
 # uzyskaj dostep do AAS'a przy pomocy konta serwisowego
@@ -49,7 +48,7 @@ $SecurePwd = ConvertTo-SecureString -String $ENV:PWD -AsPlainText -Force
 $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $ENV:UID,$SecurePwd
 # z principalem powinno być "$ENV:UID@$ENV:TENANT_ID"
 
-Connect-AzAccount -Credential $Credential -Subscription $ENV:SUBSCRIPTION_ID -Tenant $ENV:TENANT_ID -AuthScope AnalysisServices
+Connect-AzAccount -Credential $Credential -Subscription $ENV:SUBSCRIPTION_ID -Tenant $ENV:TENANT_ID -AuthScope AnalysisServices #-ServicePrincipal
 
 # stworz folder z logami, jezeli nie istnial do tej pory
 if ((Get-ChildItem .\).Name -contains "logs") {$null}
@@ -67,43 +66,59 @@ function Start-TableProcessing {
         [string] $AnalysisServicesInstance,
 
         [Parameter(Mandatory=$true)]
-        [string] $AnalysisServicesDatabaseName,
+        [string] $AnalysisServicesDatabaseName
 
-        [Parameter(Mandatory=$true)]
-        [string[]] $Tables
+        # [Parameter(Mandatory=$true)]
+        # [string[]] $Tables
     )
 
     $processing_results = @()
     $start_times = @()
     $end_times = @()
     $table_names = @()
+
+    $Tables = Read-Params -ParamsFile $params_file -ReturnedValue "Tabele"
     
     #wyciagnij wejsciowe ilosci wierszy dla kazdej z tabel, przed rozpoczeciem odswiezania
-    $Tables_tmp = $Tables
+    $Tables_tmp = $Tables.Keys
     $dax_query = ($Tables_tmp | Foreach-object {"(COUNTROWS('{0}'),`"{0}`")" -f $_}) -join ","
     [xml]$response = Invoke-AsCmd -Server $AnalysisServicesInstance -Database $AnalysisServicesDatabaseName -Credential $Credential -Query "EVALUATE {$dax_query}"
     $initial_rows = $response.return.root.row._x005B_Value1_x005D_
 
-    foreach ($table in $Tables) {
-        Write-Host "Processing table $table"
+    foreach ($entry in $Tables) {
 
         $start_times += (Get-Date -Format "yyyy/MM/dd HH:mm:ss")
-        $table_names += $table
+        $table_name = $entry.Keys
+        $table_names += $table_name
+    
+        Write-Host "Processing table $table_name"
         
         try {
-            Invoke-ProcessTable -TableName $table -DatabaseName $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential
 
+            if ((Read-Params -ParamsFile $params_file -ReturnedValue "Dzien_odswiezania_historii") -eq (Get-Date -Format "dd")) {
+                Invoke-ProcessTable -TableName $entry.Keys -DatabaseName $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential
+            }
+            else {
+                if ($entry.Values -eq "Odswiezanie_pelne") {
+                    Invoke-ProcessTable -TableName $entry.Keys -DatabaseName $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential
+                }
+                else {
+                    Invoke-ProcessPartition -TableName $entry.Keys -PartitionName (Read-Params -ParamsFile $params_file -ReturnedValue "Nazwa_partycji_historycznej") -Database $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential
+                }
+            
+            }
+            
             $end_times += (Get-Date -Format "yyyy/MM/dd HH:mm:ss")
             $processing_results += "Sukces"
 
-            Write-Host "Table $table was refreshed successfully"
-        }
-
+            Write-Host "Table $table_name was refreshed successfully"
+        
+    }
         catch {
             $end_times += (Get-Date -Format "yyyy/MM/dd HH:mm:ss")
             $processing_results += $Error[0].Exception.Message
 
-            Write-Host "Processing table $table ended with failure"
+            Write-Host "Processing table $table_name ended with failure"
         }
 
     }
@@ -130,6 +145,7 @@ function Start-TableProcessing {
 $current_datetime = Get-Date -Format "yyyyMMddHHmmss"
 $filename = ".\refresh_logs_$current_datetime.txt"
 Start-TableProcessing @refresh_params
+# $refresh_params.Values.Keys
 
 # umiesc wyniki na bobie
 Start-BlobUploadOrDownload -StorageAccount $ENV:STORAGE_ACCOUNT -Container $ENV:LOG_CONTAINER -StorageAccountAccessKey $ENV:ACCESS_KEY -FileNameOrFilePath ".\logs\$filename" -Upload -Verbose
@@ -140,3 +156,7 @@ if ( (Read-Params -ParamsFile $params_file -ReturnedValue "Raport_odswiezania").
 
     Start-DatasetRefresh -UserEmail $ENV:PBI_UID -UserPwd $ENV:PBI_PWD -DatasetId $ENV:PBI_DATASETID
 }
+
+# TODO
+# Uwzglednic obsluge service principala w skrypcie
+# Dodac skrypt czyszczacy starsze logi na blobie
