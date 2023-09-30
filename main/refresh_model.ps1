@@ -12,7 +12,7 @@ $current_hour = Get-Date -Format "HH"
 
 # zaktualizuj lokalny plik z metadanymi
 Import-Module .\modules\upload_download_files.psm1
-# Start-BlobUploadOrDownload -StorageAccount $ENV:STORAGE_ACCOUNT -Container $ENV:YML_CONTAINER -StorageAccountAccessKey $ENV:ACCESS_KEY -FileNameOrFilePath "metadane.yml" -FileDestination .\data\metadane.yml -Download
+Start-BlobUploadOrDownload -StorageAccount $ENV:STORAGE_ACCOUNT -Container $ENV:YML_CONTAINER -StorageAccountAccessKey $ENV:ACCESS_KEY -FileNameOrFilePath "metadane.yml" -FileDestination .\data\metadane.yml -Download
 
 Import-Module .\modules\check_modules.psm1
 # Start-ModuleVerification -Modules @("SqlServer","Az.Accounts","Az.Storage","powershell-yaml", "MicrosoftPowerBIMgmt")
