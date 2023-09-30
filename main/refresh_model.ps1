@@ -160,6 +160,9 @@ if ((Read-Params -ParamsFile $params_file -ReturnedValue "Raport_odswiezania").T
   Start-DatasetRefresh -UserEmail $ENV:PBI_UID -UserPwd $ENV:PBI_PWD -DatasetId $ENV:PBI_DATASETID
 }
 
+# usun pliki w kontenerze starsze niz 30 dni
+Import-Module .\tests\clean_container.psm1
+Remove-ContainerContents -AzStorageAccountName $ENV:STORAGE_ACCOUNT -ContainerName $ENV:LOG_CONTAINER -StorageAccountKey $ENV:ACCESS_KEY -NumberOfDaysToKeepFilesFrom 30
+
 # TODO
-# Uwzglednic obsluge service principala w skrypcie
-# Dodac skrypt czyszczacy starsze logi na blobie
+# Rozszerzyc obsluge bledow do pozostalych komend na modelu
