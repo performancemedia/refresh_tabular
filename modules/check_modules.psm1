@@ -30,26 +30,26 @@ on zainstalowany, funkcja od razu rozpocznie jego instalacje, wyswietlajac przeb
 #>
 
 function Start-ModuleVerification {
-    [CmdletBinding()]
+  [CmdletBinding()]
 
-    param(
-        [string[]] $Modules
-    )
+  param(
+    [string[]]$Modules
+  )
 
-    Write-Host "Checking modules..."
+  Write-Host "Checking modules..."
+  Start-Sleep -Seconds 2
+
+  foreach ($module in $Modules) {
     Start-Sleep -Seconds 2
 
-    foreach ($module in $Modules) {
-        Start-Sleep -Seconds 2
-        
-        if (Get-Module -ListAvailable -Name $module) {
-            Write-Host "$module is already installed"
-        }
-
-        else {
-            Write-Host "Installing $module module..."
-            Install-Module $module -Scope CurrentUser
-            Write-Host "Operation finished"
-        }
+    if (Get-Module -ListAvailable -Name $module) {
+      Write-Host "$module is already installed"
     }
+
+    else {
+      Write-Host "Installing $module module..."
+      Install-Module $module -Scope CurrentUser
+      Write-Host "Operation finished"
+    }
+  }
 }

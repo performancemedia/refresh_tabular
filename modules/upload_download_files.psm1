@@ -16,45 +16,45 @@ Start-BlobUploadOrDownload -StorageAccount "test1" -Container "logs" -StorageAcc
 #>
 
 function Start-BlobUploadOrDownload {
-    [CmdletBinding(
-        PositionalBinding=$true
-    )]
+  [CmdletBinding(
+    PositionalBinding = $true
+  )]
 
-    param(
-        [Parameter(Mandatory=$true)]
-        [string] $StorageAccount,
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$StorageAccount,
 
-        [Parameter(Mandatory=$true)]
-        [string] $Container,
+    [Parameter(Mandatory = $true)]
+    [string]$Container,
 
-        [Parameter(Mandatory=$true)]
-        [string] $StorageAccountAccessKey,
+    [Parameter(Mandatory = $true)]
+    [string]$StorageAccountAccessKey,
 
-        [Parameter(Mandatory=$true)]
-        [string] $FileNameOrFilePath,
+    [Parameter(Mandatory = $true)]
+    [string]$FileNameOrFilePath,
 
-        [Parameter(ParameterSetName = "Upload")]
-        [switch] $Upload,
+    [Parameter(ParameterSetName = "Upload")]
+    [switch]$Upload,
 
-        [Parameter(ParameterSetName = "Download")]
-        [switch] $Download,
+    [Parameter(ParameterSetName = "Download")]
+    [switch]$Download,
 
-        [Parameter(ParameterSetName = "Upload")]
-        [Parameter(ParameterSetName = "Download")]
-        [string] $Parameter,
+    [Parameter(ParameterSetName = "Upload")]
+    [Parameter(ParameterSetName = "Download")]
+    [string]$Parameter,
 
-        [Parameter(Mandatory=$false)]
-        [string] $FileDestination
-    )
+    [Parameter(Mandatory = $false)]
+    [string]$FileDestination
+  )
 
-    # Nawiazanie polaczenia z kontenerem i umieszczenie w nim wskazanego pliku
-    $context = (New-AzStorageContext -StorageAccountName $StorageAccount -StorageAccountKey $StorageAccountAccessKey).Context
+  # Nawiazanie polaczenia z kontenerem i umieszczenie w nim wskazanego pliku
+  $context = (New-AzStorageContext -StorageAccountName $StorageAccount -StorageAccountKey $StorageAccountAccessKey).Context
 
-    if ($Upload) {
-        Set-AzStorageBlobContent -File $FileNameOrFilePath -Container $Container -Blob $FileName -Context $context -Force
-    }
+  if ($Upload) {
+    Set-AzStorageBlobContent -File $FileNameOrFilePath -Container $Container -Blob $FileName -Context $context -Force
+  }
 
-    elseif ($Download) {
-        Get-AzStorageBlobContent -Container $Container -Blob $FileNameOrFilePath -Context $context -Force -Destination $FileDestination
-    }
+  elseif ($Download) {
+    Get-AzStorageBlobContent -Container $Container -Blob $FileNameOrFilePath -Context $context -Force -Destination $FileDestination
+  }
 }

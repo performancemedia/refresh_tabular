@@ -11,20 +11,20 @@ Read-ConfigFile -DotenvPath "./folder/.config"
 #>
 
 function Read-ConfigFile {
-    [CmdletBinding()]
+  [CmdletBinding()]
 
-    param(
-        [Parameter(Mandatory=$true)]
-        [ValidateScript({Test-Path $_})]
-        [string] $ConfigFilePath
-    )
+  param(
+    [Parameter(Mandatory = $true)]
+    [ValidateScript({ Test-Path $_ })]
+    [string]$ConfigFilePath
+  )
 
-    Get-Content $ConfigFilePath | Foreach-Object {
-        $Name, $Value = $_.split(':')
-        if ([string]::IsNullOrWhiteSpace($name) -and $name.Contains('#')) {
-            continue
-          }
-
-        Set-Content ENV:\$Name $Value
+  Get-Content $ConfigFilePath | ForEach-Object {
+    $Name,$Value = $_.split(':')
+    if ([string]::IsNullOrWhiteSpace($name) -and $name.Contains('#')) {
+      continue
     }
+
+    Set-Content ENV:\$Name $Value
+  }
 }

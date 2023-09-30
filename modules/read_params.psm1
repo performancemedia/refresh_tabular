@@ -11,17 +11,17 @@ Read-Params -ParamsFile $param_hashtable -ReturnedValue "Value2"
 #>
 
 function Read-Params {
-    [CmdletBinding()]
+  [CmdletBinding()]
 
-    param(
-        [Parameter(Mandatory=$true)]
-        [hashtable] $ParamsFile,
+  param(
+    [Parameter(Mandatory = $true)]
+    [hashtable]$ParamsFile,
 
-        [Parameter(Mandatory=$true)]
-        [string] $ReturnedValue
-    )
+    [Parameter(Mandatory = $true)]
+    [string]$ReturnedValue
+  )
 
-    foreach ($entry in $ParamsFile.GetEnumerator() ) {
-        $entry.Value | Where-Object {$entry.Name -eq $ReturnedValue}
-    }
+  foreach ($entry in $ParamsFile.GetEnumerator()) {
+    $entry.Value | Where-Object { $entry.Name -eq $ReturnedValue }
+  }
 }

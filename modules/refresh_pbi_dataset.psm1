@@ -10,24 +10,24 @@ Start-DatasetRefresh -UserEmail "jan.nowak@firma.net" -UserPwd $ENV:PBI_PWD -Dat
 #>
 
 function Start-DatasetRefresh {
-    [CmdletBinding(
-        PositionalBinding=$true)] 
+  [CmdletBinding(
+    PositionalBinding = $true)]
 
-        param(
-            [Parameter(Mandatory=$true)]
-            [string] $UserEmail,
-    
-            [Parameter(Mandatory=$true)]
-            [string] $UserPwd,
-    
-            [Parameter(Mandatory=$true)]
-            [string] $DatasetId
-        )
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$UserEmail,
 
-        [securestring]$secure_pwd = ConvertTo-SecureString $UserPwd -AsPlainText -Force
-        [pscredential]$creds = New-Object System.Management.Automation.PSCredential($UserEmail,$secure_pwd)
-        $url = "datasets/$DatasetId/refreshes"
+    [Parameter(Mandatory = $true)]
+    [string]$UserPwd,
 
-        Connect-PowerBIServiceAccount -Credential $creds
-        Invoke-PowerBIRestMethod -Url $url -Method Post -Body $DatasetId
+    [Parameter(Mandatory = $true)]
+    [string]$DatasetId
+  )
+
+  [securestring]$secure_pwd = ConvertTo-SecureString $UserPwd -AsPlainText -Force
+  [pscredential]$creds = New-Object System.Management.Automation.PSCredential ($UserEmail,$secure_pwd)
+  $url = "datasets/$DatasetId/refreshes"
+
+  Connect-PowerBIServiceAccount -Credential $creds
+  Invoke-PowerBIRestMethod -Url $url -Method Post -Body $DatasetId
 }
