@@ -10,7 +10,7 @@ Read-ConfigFile -ConfigFilePath .\.config
 # obecna godzina posluzy do zweryfikowania, czy nalezy rozpoczac odswiezanie
 $current_hour = Get-Date -Format "HH"
 
-# zaktualizuj plik z metadanymi
+# zaktualizuj lokalny plik z metadanymi
 Import-Module .\modules\upload_download_files.psm1
 # Start-BlobUploadOrDownload -StorageAccount $ENV:STORAGE_ACCOUNT -Container $ENV:YML_CONTAINER -StorageAccountAccessKey $ENV:ACCESS_KEY -FileNameOrFilePath "metadane.yml" -FileDestination .\data\metadane.yml -Download
 
@@ -48,7 +48,13 @@ $SecurePwd = ConvertTo-SecureString -String $ENV:PWD -AsPlainText -Force
 $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $ENV:UID,$SecurePwd
 # z principalem powinno być "$ENV:UID@$ENV:TENANT_ID"
 
-Connect-AzAccount -Credential $Credential -Subscription $ENV:SUBSCRIPTION_ID -Tenant $ENV:TENANT_ID -AuthScope AnalysisServices #-ServicePrincipal
+try 
+    {Connect-AzAccount -Credential $Credential -Subscription $ENV:SUBSCRIPTION_ID -Tenant $ENV:TENANT_ID -AuthScope AnalysisServices -ServicePrincipal -ErrorAction Stop}
+
+catch {
+    Write-Error -Message "The connection to AAS Instance could not been established" -Category PermissionDenied -RecommendedAction "Verify if specified user has access to the Server Instance"
+break
+}
 
 # stworz folder z logami, jezeli nie istnial do tej pory
 if ((Get-ChildItem .\).Name -contains "logs") {$null}
@@ -68,8 +74,6 @@ function Start-TableProcessing {
         [Parameter(Mandatory=$true)]
         [string] $AnalysisServicesDatabaseName
 
-        # [Parameter(Mandatory=$true)]
-        # [string[]] $Tables
     )
 
     $processing_results = @()
@@ -82,7 +86,7 @@ function Start-TableProcessing {
     #wyciagnij wejsciowe ilosci wierszy dla kazdej z tabel, przed rozpoczeciem odswiezania
     $Tables_tmp = $Tables.Keys
     $dax_query = ($Tables_tmp | Foreach-object {"(COUNTROWS('{0}'),`"{0}`")" -f $_}) -join ","
-    [xml]$response = Invoke-AsCmd -Server $AnalysisServicesInstance -Database $AnalysisServicesDatabaseName -Credential $Credential -Query "EVALUATE {$dax_query}"
+    [xml]$response = Invoke-AsCmd -Server $AnalysisServicesInstance -Database $AnalysisServicesDatabaseName -Credential $Credential -ServicePrincipal -Query "EVALUATE {$dax_query}"
     $initial_rows = $response.return.root.row._x005B_Value1_x005D_
 
     foreach ($entry in $Tables) {
@@ -96,14 +100,14 @@ function Start-TableProcessing {
         try {
 
             if ((Read-Params -ParamsFile $params_file -ReturnedValue "Dzien_odswiezania_historii") -eq (Get-Date -Format "dd")) {
-                Invoke-ProcessTable -TableName $entry.Keys -DatabaseName $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential
+                Invoke-ProcessTable -TableName $entry.Keys -DatabaseName $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential -ServicePrincipal
             }
             else {
                 if ($entry.Values -eq "Odswiezanie_pelne") {
-                    Invoke-ProcessTable -TableName $entry.Keys -DatabaseName $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential
+                    Invoke-ProcessTable -TableName $entry.Keys -DatabaseName $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential -ServicePrincipal
                 }
                 else {
-                    Invoke-ProcessPartition -TableName $entry.Keys -PartitionName (Read-Params -ParamsFile $params_file -ReturnedValue "Nazwa_partycji_historycznej") -Database $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential
+                    Invoke-ProcessPartition -TableName $entry.Keys -PartitionName (Read-Params -ParamsFile $params_file -ReturnedValue "Nazwa_partycji_historycznej") -Database $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential -ServicePrincipal
                 }
             
             }
@@ -124,7 +128,7 @@ function Start-TableProcessing {
     }
 
     # wyciagnij wyjsciowe ilosci wierszy dla kazdej z tabel. Posluzy to do porownania, ile wierszy zostalo zaladowanych dla kazdej z tabel
-    [xml]$response = Invoke-AsCmd -Server $AnalysisServicesInstance -Database $AnalysisServicesDatabaseName -Credential $Credential -Query "EVALUATE {$dax_query}"
+    [xml]$response = Invoke-AsCmd -Server $AnalysisServicesInstance -Database $AnalysisServicesDatabaseName -Credential $Credential -ServicePrincipal -Query "EVALUATE {$dax_query}"
     $final_rows = $response.return.root.row._x005B_Value1_x005D_
 
     $refresh_stats = [PSCustomObject]@{
@@ -145,7 +149,6 @@ function Start-TableProcessing {
 $current_datetime = Get-Date -Format "yyyyMMddHHmmss"
 $filename = ".\refresh_logs_$current_datetime.txt"
 Start-TableProcessing @refresh_params
-# $refresh_params.Values.Keys
 
 # umiesc wyniki na bobie
 Start-BlobUploadOrDownload -StorageAccount $ENV:STORAGE_ACCOUNT -Container $ENV:LOG_CONTAINER -StorageAccountAccessKey $ENV:ACCESS_KEY -FileNameOrFilePath ".\logs\$filename" -Upload -Verbose
