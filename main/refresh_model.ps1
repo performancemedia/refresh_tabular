@@ -12,7 +12,7 @@ $current_hour = Get-Date -Format "HH"
 
 # zaktualizuj lokalny plik z metadanymi
 Import-Module .\modules\upload_download_files.psm1
-Start-BlobUploadOrDownload -StorageAccount $ENV:STORAGE_ACCOUNT -Container $ENV:YML_CONTAINER -StorageAccountAccessKey $ENV:ACCESS_KEY -FileNameOrFilePath "metadane.yml" -FileDestination .\data\metadane.yml -Download
+# Start-BlobUploadOrDownload -StorageAccount $ENV:STORAGE_ACCOUNT -Container $ENV:YML_CONTAINER -StorageAccountAccessKey $ENV:ACCESS_KEY -FileNameOrFilePath "metadane.yml" -FileDestination .\data\metadane.yml -Download
 
 Import-Module .\modules\check_modules.psm1
 Start-ModuleVerification -Modules @("SqlServer","Az.Accounts","Az.Storage","powershell-yaml", "MicrosoftPowerBIMgmt")
@@ -99,7 +99,7 @@ function Start-TableProcessing {
 
     try {
 
-      if ((Read-Params -ParamsFile $params_file -ReturnedValue "Dzien_odswiezania_historii") -eq (Get-Date -Format "dd")) {
+      if ((Get-Date -Format "dd") -in (Read-Params -ParamsFile $params_file -ReturnedValue "Dzien_odswiezania_historii")) {
         Invoke-ProcessTable -TableName $entry.Keys -DatabaseName $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential -ServicePrincipal
       }
       else {
@@ -161,7 +161,7 @@ if ((Read-Params -ParamsFile $params_file -ReturnedValue "Raport_odswiezania").T
 }
 
 # usun pliki w kontenerze starsze niz 30 dni
-Import-Module .\tests\clean_container.psm1
+Import-Module .\modules\clean_container.psm1
 Remove-ContainerContents -AzStorageAccountName $ENV:STORAGE_ACCOUNT -ContainerName $ENV:LOG_CONTAINER -StorageAccountKey $ENV:ACCESS_KEY -NumberOfDaysToKeepFilesFrom 30
 
 # TODO
