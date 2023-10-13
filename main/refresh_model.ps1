@@ -80,6 +80,8 @@ function Start-TableProcessing {
   $start_times = @()
   $end_times = @()
   $table_names = @()
+  $is_history_refresh_flags = @()
+  $processing_types = @()
 
   $Tables = Read-Params -ParamsFile $params_file -ReturnedValue "Tabele"
 
@@ -101,13 +103,22 @@ function Start-TableProcessing {
 
       if ((Get-Date -Format "dd") -in (Read-Params -ParamsFile $params_file -ReturnedValue "Dzien_odswiezania_historii")) {
         Invoke-ProcessTable -TableName $entry.Keys -DatabaseName $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential -ServicePrincipal
+        $is_history_refresh_flags += "Y"
+        $processing_types += "Full"
+
       }
       else {
         if ($entry.Values -eq "Odswiezanie_pelne") {
           Invoke-ProcessTable -TableName $entry.Keys -DatabaseName $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential -ServicePrincipal
+          $is_history_refresh_flags += "N/A"
+          $processing_types += "Full"
+
         }
         else {
           Invoke-ProcessPartition -TableName $entry.Keys -PartitionName (Read-Params -ParamsFile $params_file -ReturnedValue "Nazwa_partycji_historycznej") -Database $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential -ServicePrincipal
+          $is_history_refresh_flags += "N"
+          $processing_types += "Partition"
+
         }
 
       }
@@ -136,8 +147,10 @@ function Start-TableProcessing {
     Start = $start_times
     Koniec = $end_times
     Wynik = $processing_results
+    Odswiezanie_historii = $is_history_refresh_flags
     Wiersze_wejsciowe = $initial_rows
     Wiersze_wyjsciowe = $final_rows
+    Sposob_odswiezania = $processing_types
   }
 
   # zapisz wyniki odswiezania jako json
