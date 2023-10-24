@@ -12,7 +12,7 @@ $current_hour = Get-Date -Format "HH"
 
 # zaktualizuj lokalny plik z metadanymi
 Import-Module .\modules\upload_download_files.psm1
-Start-BlobUploadOrDownload -StorageAccount $ENV:STORAGE_ACCOUNT -Container $ENV:YML_CONTAINER -StorageAccountAccessKey $ENV:ACCESS_KEY -FileNameOrFilePath "metadane.yml" -FileDestination .\data\metadane.yml -Download
+# Start-BlobUploadOrDownload -StorageAccount $ENV:STORAGE_ACCOUNT -Container $ENV:YML_CONTAINER -StorageAccountAccessKey $ENV:ACCESS_KEY -FileNameOrFilePath "metadane.yml" -FileDestination .\data\metadane.yml -Download
 
 Import-Module .\modules\check_modules.psm1
 Start-ModuleVerification -Modules @("SqlServer","Az.Accounts","Az.Storage","powershell-yaml", "MicrosoftPowerBIMgmt")
@@ -92,23 +92,21 @@ function Start-TableProcessing {
   $initial_rows = $response.return.Root.row._x005B_Value1_x005D_
 
   foreach ($entry in $Tables) {
-
+    
+    $error.clear()
     $start_times += (Get-Date -Format "yyyy/MM/dd HH:mm:ss")
     $table_name = $entry.Keys
     $table_names += $table_name
 
     Write-Host "Processing table $table_name"
 
-    try {
-
-      if ((Get-Date -Format "dd") -in (Read-Params -ParamsFile $params_file -ReturnedValue "Dzien_odswiezania_historii")) {
+    if ((Get-Date -Format "dd") -in (Read-Params -ParamsFile $params_file -ReturnedValue "Dzien_odswiezania_historii")) {
         Invoke-ProcessTable -TableName $entry.Keys -DatabaseName $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential -ServicePrincipal
         $is_history_refresh_flags += "Y"
         $processing_types += "Full"
 
       }
-      else {
-        if ($entry.Values -eq "Odswiezanie_pelne") {
+      elseif ($entry.Values -eq "Odswiezanie_pelne") {
           Invoke-ProcessTable -TableName $entry.Keys -DatabaseName $AnalysisServicesDatabaseName -Server $AnalysisServicesInstance -RefreshType Full -Verbose -Credential $Credential -ServicePrincipal
           $is_history_refresh_flags += "N/A"
           $processing_types += "Full"
@@ -121,21 +119,18 @@ function Start-TableProcessing {
 
         }
 
-      }
-
       $end_times += (Get-Date -Format "yyyy/MM/dd HH:mm:ss")
-      $processing_results += "Sukces"
 
-      Write-Host "Table $table_name was refreshed successfully"
-
-    }
-    catch {
-      $end_times += (Get-Date -Format "yyyy/MM/dd HH:mm:ss")
-      $processing_results += $Error[0].Exception.Message
-
-      Write-Host "Processing table $table_name ended with failure"
-    }
-
+      if (
+            ([string]::IsNullOrEmpty($error[0].Exception)) -ne $true
+        ) {
+            $processing_results += $error[0].Exception.Message
+            "Processing table $table ended with failure"
+        }
+        else {
+            $processing_results += "Sukces"
+            "Finished processing table $table"
+        }
   }
 
   # wyciagnij wyjsciowe ilosci wierszy dla kazdej z tabel. Posluzy to do porownania, ile wierszy zostalo zaladowanych dla kazdej z tabel
