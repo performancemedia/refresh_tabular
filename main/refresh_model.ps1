@@ -162,11 +162,11 @@ Start-TableProcessing @refresh_params
 Start-BlobUploadOrDownload -StorageAccount $ENV:STORAGE_ACCOUNT -Container $ENV:LOG_CONTAINER -StorageAccountAccessKey $ENV:ACCESS_KEY -FileNameOrFilePath ".\logs\$filename" -Upload -Verbose
 
 # odswiez raport z wynikami procesowania modelu (chyba, ze wskazano inaczej w pliku .yml)
-if ((Read-Params -ParamsFile $params_file -ReturnedValue "Raport_odswiezania").ToUpper() -eq "TAK") {
-  Import-Module .\modules\refresh_pbi_dataset.psm1
+# if ((Read-Params -ParamsFile $params_file -ReturnedValue "Raport_odswiezania").ToUpper() -eq "TAK") {
+#   Import-Module .\modules\refresh_pbi_dataset.psm1
 
-  Start-DatasetRefresh -UserEmail $ENV:PBI_UID -UserPwd $ENV:PBI_PWD -DatasetId $ENV:PBI_DATASETID
-}
+#   Start-DatasetRefresh -UserEmail $ENV:PBI_UID -UserPwd $ENV:PBI_PWD -DatasetId $ENV:PBI_DATASETID
+# }
 
 # usun pliki w kontenerze starsze niz 30 dni
 Import-Module .\modules\clean_container.psm1
