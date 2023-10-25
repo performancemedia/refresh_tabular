@@ -29,5 +29,7 @@ function Start-DatasetRefresh {
   $url = "datasets/$DatasetId/refreshes"
 
   Connect-PowerBIServiceAccount -Credential $creds
-  Invoke-PowerBIRestMethod -Url $url -Method Post -Body $DatasetId
+  $uri = "https://api.powerbi.com/v1.0/me/datasets/$DatasetId/refreshes"
+  Invoke-RestMethod -Uri $uri –Headers $authHeader –Method POST –Verbose
+  # Invoke-PowerBIRestMethod -Url $url -Method Post -Body $DatasetId
 }
